@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>Resources/fragment.glsl</file>
+        <file>Resources/texture.jpg</file>
+        <file>Resources/vertex.glsl</file>
+    </qresource>
+</RCC>
