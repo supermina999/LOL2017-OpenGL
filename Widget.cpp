@@ -15,11 +15,10 @@ Widget::Widget(QWidget *parent)
     : QOpenGLWidget(parent)
 {
     mAspect = 1;
-    mPosition = {0, 0, -5};
+    mPosition = {0, 0, -6};
     mScale = {1, 1, 1};
     mRotation = {0, 0, 0};
     mRotationSpeed = 1;
-    updateTransform();
 
     mVertexes = {
         {1, 1, 1}, {-1, 1, 1}, {-1, -1, 1},
@@ -66,7 +65,7 @@ Widget::Widget(QWidget *parent)
         {1, 1}, {0, 0}, {0, 1},
     };
 
-    mLightPosition = {0, 0, 5};
+    mLightPosition = {0, 0, 6};
     mLightingParams = {0.4, 0.6, 0.6, 1024};
 
     auto timer = new QTimer(this);
@@ -94,11 +93,10 @@ Widget::~Widget()
 
 void Widget::onTimer()
 {
-    mRotation.x += 0.015 * mRotationSpeed;
-    mRotation.y += 0.005 * mRotationSpeed;
-    mRotation.z += 0.005 * mRotationSpeed;
+    mRotation.x += 0.03 * mRotationSpeed;
+    mRotation.y += 0.01 * mRotationSpeed;
+    mRotation.z += 0.01 * mRotationSpeed;
     //scale.x += 0.001;
-    updateTransform();
     update();
 }
 
@@ -172,7 +170,6 @@ void Widget::initializeGL()
 void Widget::resizeGL(int w, int h)
 {
     mAspect = (float(w)) / h;
-    updateTransform();
 }
 
 void Widget::paintGL()
@@ -196,6 +193,7 @@ void Widget::paintGL()
     glEnableVertexAttribArray(mTexCoordAttrib);
     glVertexAttribPointer(mTexCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
+    updateTransform();
     glUniformMatrix4fv(mMVMatrixUniform, 1, GL_FALSE, &mMVMatrix[0][0]);
     glUniformMatrix4fv(mMVPMatrixUniform, 1, GL_FALSE, &mMVPMatrix[0][0]);
     glUniformMatrix3fv(mNormalMatrixUniform, 1, GL_FALSE, &mNormalMatrix[0][0]);
