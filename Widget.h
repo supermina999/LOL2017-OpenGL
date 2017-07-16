@@ -2,12 +2,13 @@
 #define WIDGET_H
 
 #include <QOpenGLWidget>
+#include <QOpenGLFunctions>
 
 #include <vector>
 
 #include <glm/glm.hpp>
 
-class Widget : public QOpenGLWidget
+class Widget : public QOpenGLWidget, QOpenGLFunctions
 {
     Q_OBJECT
 public:

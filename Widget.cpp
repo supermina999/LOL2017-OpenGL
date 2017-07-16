@@ -114,6 +114,8 @@ void Widget::faster()
 
 void Widget::initializeGL()
 {
+    initializeOpenGLFunctions();
+
     glViewport(-1, -1, 2, 2);
 
     glClearColor(0, 0, 1, 1);
@@ -264,10 +266,10 @@ void Widget::updateTransform()
     auto rotateMatZ = glm::rotate(mRotation.z, glm::vec3(0, 0, 1));
     auto rotationMat = rotateMatZ * rotateMatY * rotateMatX;
 
-    float fov = 70;
-    float near = 0.01;
-    float far = 1000;
-    auto perspectiveMat = glm::perspective(fov, mAspect, near, far);
+    float perspectiveFov = 70;
+    float perspectiveNear = 0.01;
+    float perspectiveFar = 1000;
+    auto perspectiveMat = glm::perspective(perspectiveFov, mAspect, perspectiveNear, perspectiveFar);
 
     mMVMatrix = translateMat * rotationMat * scaleMat;
     mMVPMatrix = perspectiveMat * mMVMatrix;
