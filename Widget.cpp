@@ -67,6 +67,7 @@ Widget::Widget(QWidget *parent)
     };
 
     mLightPosition = {0, 0, 5};
+    mLightingParams = {0.4, 0.6, 0.6, 1024};
 
     auto timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(onTimer()));
@@ -131,6 +132,8 @@ void Widget::initializeGL()
     mNormalMatrixUniform = glGetUniformLocation(mProgram, "normalMatrix");
     mLightPositionUniform = glGetUniformLocation(mProgram, "lightPosition");
 
+    mLightingParamsUniform = glGetUniformLocation(mProgram, "lightingParams");
+
     mVertexAttrib = glGetAttribLocation(mProgram, "vertex");
     mTexCoordAttrib = glGetAttribLocation(mProgram, "texCoord");
     mNormalAttrib = glGetAttribLocation(mProgram, "normal");
@@ -193,7 +196,9 @@ void Widget::paintGL()
     glUniformMatrix4fv(mMVMatrixUniform, 1, GL_FALSE, &mMVMatrix[0][0]);
     glUniformMatrix4fv(mMVPMatrixUniform, 1, GL_FALSE, &mMVPMatrix[0][0]);
     glUniformMatrix3fv(mNormalMatrixUniform, 1, GL_FALSE, &mNormalMatrix[0][0]);
+
     glUniform3fv(mLightPositionUniform, 1, &mLightPosition[0]);
+    glUniform4fv(mLightingParamsUniform, 1, &mLightingParams[0]);
 
     glDrawArrays(GL_TRIANGLES, 0, mVertexes.size());
 }

@@ -33,10 +33,11 @@ protected:
     std::vector<glm::vec3> mVertexes, mNormals;
     std::vector<glm::vec2> mTexCoords;
     glm::vec3 mLightPosition;
+    glm::vec4 mLightingParams;
 
     GLuint mVertexAttrib, mTexCoordAttrib, mNormalAttrib;
     GLuint mTexture;
-    GLuint mMVMatrixUniform, mMVPMatrixUniform, mNormalMatrixUniform, mLightPositionUniform;
+    GLuint mMVMatrixUniform, mMVPMatrixUniform, mNormalMatrixUniform, mLightPositionUniform, mLightingParamsUniform;
 
     glm::vec3 mPosition, mScale, mRotation;
     glm::mat4 mMVMatrix, mMVPMatrix;
