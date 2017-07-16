@@ -1,9 +1,9 @@
 uniform sampler2D sampler;
 uniform vec4 lightingParams;
 
-varying mediump vec2 varyingTexCoord;
-varying mediump vec3 varyingNormal;
-varying mediump vec3 varyingLightDirection;
+varying highp vec2 varyingTexCoord;
+varying highp vec3 varyingNormal;
+varying highp vec3 varyingLightDirection;
 
 void main()
 {

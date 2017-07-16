@@ -85,6 +85,7 @@ Widget::~Widget()
     glDeleteProgram(mProgram);
 
     glDeleteBuffers(1, &mVertexArrayBuffer);
+    glDeleteBuffers(1, &mNormalArrayBuffer);
     glDeleteBuffers(1, &mTexCoordsArrayBuffer);
     glDeleteTextures(1, &mTexture);
 
@@ -213,7 +214,7 @@ GLuint Widget::createShader(QString filename, GLenum shaderType)
     if(context()->isOpenGLES())
     {
         source = "#version 100\n"
-                 "precision mediump float;\n"
+                 "precision highp float;\n"
                  + source;
     }
     else

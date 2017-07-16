@@ -7,9 +7,9 @@ attribute vec3 vertex;
 attribute vec3 normal;
 attribute vec2 texCoord;
 
-varying mediump vec2 varyingTexCoord;
-varying mediump vec3 varyingNormal;
-varying mediump vec3 varyingLightDirection;
+varying highp vec2 varyingTexCoord;
+varying highp vec3 varyingNormal;
+varying highp vec3 varyingLightDirection;
 
 void main()
 {
