@@ -12,8 +12,8 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
 
-    glWidget = new Widget();
-    layout->addWidget(glWidget);
+    mGLWidget = new Widget();
+    layout->addWidget(mGLWidget);
 
     auto buttonsLayout = new QHBoxLayout();
     int margin = fontMetrics().height() / 3;
@@ -22,11 +22,11 @@ MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
     layout->addLayout(buttonsLayout);
 
     auto slowerButton = new QPushButton("Slower");
-    connect(slowerButton, SIGNAL(clicked()), glWidget, SLOT(slower()));
+    connect(slowerButton, SIGNAL(clicked()), mGLWidget, SLOT(slower()));
     buttonsLayout->addWidget(slowerButton);
 
     auto fasterButton = new QPushButton("Faster");
-    connect(fasterButton, SIGNAL(clicked()), glWidget, SLOT(faster()));
+    connect(fasterButton, SIGNAL(clicked()), mGLWidget, SLOT(faster()));
     buttonsLayout->addWidget(fasterButton);
 
     setLayout(layout);

@@ -1,8 +1,10 @@
 uniform sampler2D sampler;
 
-varying lowp vec2 fragTexCoord;
+varying mediump vec2 fragTexCoord;
+varying mediump float diffuse;
 
 void main()
 {
-    gl_FragColor = texture2D(sampler, fragTexCoord);
+    vec4 color = texture2D(sampler, fragTexCoord);
+    gl_FragColor = vec4(color.xyz * diffuse, 1.0);
 }

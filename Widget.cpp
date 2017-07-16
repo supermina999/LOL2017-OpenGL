@@ -14,33 +14,14 @@
 Widget::Widget(QWidget *parent)
     : QOpenGLWidget(parent)
 {
-    aspect = 1;
-    position = {0, 0, -5};
-    scale = {1, 1, 1};
-    rotation = {0, 0, 0};
-    rotationSpeed = 1;
+    mAspect = 1;
+    mPosition = {0, 0, -5};
+    mScale = {1, 1, 1};
+    mRotation = {0, 0, 0};
+    mRotationSpeed = 1;
     updateTransform();
 
-    /*
-    vertexes = {
-        {1, 1, 1}, {-1, 1, 1}, {-1, -1, 1}, {1, -1, 1},
-        {1, 1, -1}, {1, -1, -1}, {-1, -1, -1}, {-1, 1, -1},
-        {1, 1, 1}, {1, 1, -1}, {-1, 1, -1}, {-1, 1, 1},
-        {1, -1, 1}, {-1, -1, 1}, {-1, -1, -1}, {1, -1, -1},
-        {1, 1, 1}, {1, -1, 1}, {1, -1, -1}, {1, 1, -1},
-        {-1, 1, 1}, {-1, 1, -1}, {-1, -1, -1}, {-1, -1, 1},
-    };
-    texCoords = {
-        {1, 1}, {0, 1}, {0, 0}, {1, 0},
-        {1, 1}, {1, 0}, {0, 0}, {0, 1},
-        {1, 1}, {0, 1}, {0, 0}, {1, 0},
-        {1, 1}, {1, 0}, {0, 0}, {0, 1},
-        {1, 1}, {0, 1}, {0, 0}, {1, 0},
-        {1, 1}, {1, 0}, {0, 0}, {0, 1},
-    };
-    */
-
-    vertexes = {
+    mVertexes = {
         {1, 1, 1}, {-1, 1, 1}, {-1, -1, 1},
         {1, 1, 1}, {-1, -1, 1}, {1, -1, 1},
         {1, 1, -1}, {1, -1, -1}, {-1, -1, -1},
@@ -54,7 +35,23 @@ Widget::Widget(QWidget *parent)
         {-1, 1, 1}, {-1, 1, -1}, {-1, -1, -1},
         {-1, 1, 1}, {-1, -1, -1}, {-1, -1, 1},
     };
-    texCoords = {
+
+    mNormals = {
+        {0, 0, 1}, {0, 0, 1}, {0, 0, 1},
+        {0, 0, 1}, {0, 0, 1}, {0, 0, 1},
+        {0, 0, -1}, {0, 0, -1}, {0, 0, -1},
+        {0, 0, -1}, {0, 0, -1}, {0, 0, -1},
+        {0, 1, 0}, {0, 1, 0}, {0, 1, 0},
+        {0, 1, 0}, {0, 1, 0}, {0, 1, 0},
+        {0, -1, 0}, {0, -1, 0}, {0, -1, 0},
+        {0, -1, 0}, {0, -1, 0}, {0, -1, 0},
+        {1, 0, 0}, {1, 0, 0}, {1, 0, 0},
+        {1, 0, 0}, {1, 0, 0}, {1, 0, 0},
+        {-1, 0, 0}, {-1, 0, 0}, {-1, 0, 0},
+        {-1, 0, 0}, {-1, 0, 0}, {-1, 0, 0},
+    };
+
+    mTexCoords = {
         {1, 1}, {0, 1}, {0, 0},
         {1, 1}, {0, 0}, {1, 0},
         {1, 1}, {1, 0}, {0, 0},
@@ -69,6 +66,8 @@ Widget::Widget(QWidget *parent)
         {1, 1}, {0, 0}, {0, 1},
     };
 
+    mLightPosition = {0, 0, 5};
+
     auto timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(onTimer()));
     timer->start(1000 / 60);
@@ -78,24 +77,24 @@ Widget::~Widget()
 {
     makeCurrent();
 
-    glDetachShader(program, vertexShader);
-    glDetachShader(program, fragmentShader);
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
-    glDeleteProgram(program);
+    glDetachShader(mProgram, mVertexShader);
+    glDetachShader(mProgram, mFragmentShader);
+    glDeleteShader(mVertexShader);
+    glDeleteShader(mFragmentShader);
+    glDeleteProgram(mProgram);
 
-    glDeleteBuffers(1, &vertexArrayBuffer);
-    glDeleteBuffers(1, &texCoordsArrayBuffer);
-    glDeleteTextures(1, &texture);
+    glDeleteBuffers(1, &mVertexArrayBuffer);
+    glDeleteBuffers(1, &mTexCoordsArrayBuffer);
+    glDeleteTextures(1, &mTexture);
 
     doneCurrent();
 }
 
 void Widget::onTimer()
 {
-    rotation.x += 0.015 * rotationSpeed;
-    rotation.y += 0.005 * rotationSpeed;
-    rotation.z += 0.005 * rotationSpeed;
+    mRotation.x += 0.015 * mRotationSpeed;
+    mRotation.y += 0.005 * mRotationSpeed;
+    mRotation.z += 0.005 * mRotationSpeed;
     //scale.x += 0.001;
     updateTransform();
     update();
@@ -103,12 +102,12 @@ void Widget::onTimer()
 
 void Widget::slower()
 {
-    rotationSpeed *= 0.8;
+    mRotationSpeed *= 0.8;
 }
 
 void Widget::faster()
 {
-    rotationSpeed *= 1.2;
+    mRotationSpeed *= 1.2;
 }
 
 void Widget::initializeGL()
@@ -119,30 +118,40 @@ void Widget::initializeGL()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    program = glCreateProgram();
-    vertexShader = createShader(":/Resources/vertex.glsl", GL_VERTEX_SHADER);
-    fragmentShader = createShader(":/Resources/fragment.glsl", GL_FRAGMENT_SHADER);
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
-    glLinkProgram(program);
+    mProgram = glCreateProgram();
+    mVertexShader = createShader(":/Resources/vertex.glsl", GL_VERTEX_SHADER);
+    mFragmentShader = createShader(":/Resources/fragment.glsl", GL_FRAGMENT_SHADER);
+    glAttachShader(mProgram, mVertexShader);
+    glAttachShader(mProgram, mFragmentShader);
+    glLinkProgram(mProgram);
     glFinish();
-    transformUniform = glGetUniformLocation(program, "transform");
-    vertexAttrib = glGetAttribLocation(program, "position");
-    texCoordAttrib = glGetAttribLocation(program, "texCoord");
+
+    mMVMatrixUniform = glGetUniformLocation(mProgram, "mvMatrix");
+    mMVPMatrixUniform = glGetUniformLocation(mProgram, "mvpMatrix");
+    mNormalMatrixUniform = glGetUniformLocation(mProgram, "normalMatrix");
+    mLightPositionUniform = glGetUniformLocation(mProgram, "lightPosition");
+
+    mVertexAttrib = glGetAttribLocation(mProgram, "vertex");
+    mTexCoordAttrib = glGetAttribLocation(mProgram, "texCoord");
+    mNormalAttrib = glGetAttribLocation(mProgram, "normal");
 
     //glGenVertexArrays(1, &vertexArrayObject);
     //glBindVertexArray(vertexArrayObject);
 
-    glGenBuffers(1, &vertexArrayBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexArrayBuffer);
-    glBufferData(GL_ARRAY_BUFFER, vertexes.size() * sizeof(vertexes[0]), vertexes.data(), GL_STATIC_DRAW);
+    glGenBuffers(1, &mVertexArrayBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, mVertexArrayBuffer);
+    glBufferData(GL_ARRAY_BUFFER, mVertexes.size() * sizeof(mVertexes[0]), mVertexes.data(), GL_STATIC_DRAW);
 
-    glGenBuffers(1, &texCoordsArrayBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, texCoordsArrayBuffer);
-    glBufferData(GL_ARRAY_BUFFER, texCoords.size() * sizeof(texCoords[0]), texCoords.data(), GL_STATIC_DRAW);
+    glGenBuffers(1, &mNormalArrayBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, mNormalArrayBuffer);
+    glBufferData(GL_ARRAY_BUFFER, mNormals.size() * sizeof(mNormals[0]), mNormals.data(), GL_STATIC_DRAW);
 
-    glGenTextures(1, &texture);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glGenBuffers(1, &mTexCoordsArrayBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, mTexCoordsArrayBuffer);
+    glBufferData(GL_ARRAY_BUFFER, mTexCoords.size() * sizeof(mTexCoords[0]), mTexCoords.data(), GL_STATIC_DRAW);
+
+    glGenTextures(1, &mTexture);
+    glBindTexture(GL_TEXTURE_2D, mTexture);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -156,33 +165,37 @@ void Widget::initializeGL()
 
 void Widget::resizeGL(int w, int h)
 {
-    aspect = (float(w)) / h;
+    mAspect = (float(w)) / h;
     updateTransform();
 }
 
 void Widget::paintGL()
 {
-    makeCurrent();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(program);
+    glUseProgram(mProgram);
 
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
+    glBindTexture(GL_TEXTURE_2D, mTexture);
 
-    glBindBuffer(GL_ARRAY_BUFFER, vertexArrayBuffer);
-    glEnableVertexAttribArray(vertexAttrib);
-    glVertexAttribPointer(vertexAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, mVertexArrayBuffer);
+    glEnableVertexAttribArray(mVertexAttrib);
+    glVertexAttribPointer(mVertexAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, texCoordsArrayBuffer);
-    glEnableVertexAttribArray(texCoordAttrib);
-    glVertexAttribPointer(texCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, mNormalArrayBuffer);
+    glEnableVertexAttribArray(mNormalAttrib);
+    glVertexAttribPointer(mNormalAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glUniformMatrix4fv(transformUniform, 1, GL_FALSE, &transform[0][0]);
+    glBindBuffer(GL_ARRAY_BUFFER, mTexCoordsArrayBuffer);
+    glEnableVertexAttribArray(mTexCoordAttrib);
+    glVertexAttribPointer(mTexCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glDrawArrays(GL_TRIANGLES, 0, vertexes.size());
+    glUniformMatrix4fv(mMVMatrixUniform, 1, GL_FALSE, &mMVMatrix[0][0]);
+    glUniformMatrix4fv(mMVPMatrixUniform, 1, GL_FALSE, &mMVPMatrix[0][0]);
+    glUniformMatrix3fv(mNormalMatrixUniform, 1, GL_FALSE, &mNormalMatrix[0][0]);
+    glUniform3fv(mLightPositionUniform, 1, &mLightPosition[0]);
 
-    doneCurrent();
+    glDrawArrays(GL_TRIANGLES, 0, mVertexes.size());
 }
 
 GLuint Widget::createShader(QString filename, GLenum shaderType)
@@ -194,7 +207,9 @@ GLuint Widget::createShader(QString filename, GLenum shaderType)
 
     if(context()->isOpenGLES())
     {
-        source = "#version 100\n" + source;
+        source = "#version 100\n"
+                 "precision mediump float;\n"
+                 + source;
     }
     else
     {
@@ -236,17 +251,19 @@ GLuint Widget::createShader(QString filename, GLenum shaderType)
 
 void Widget::updateTransform()
 {
-    auto translateMat = glm::translate(position);
-    auto scaleMat = glm::scale(scale);
-    auto rotateMatX = glm::rotate(rotation.x, glm::vec3(1, 0, 0));
-    auto rotateMatY = glm::rotate(rotation.y, glm::vec3(0, 1, 0));
-    auto rotateMatZ = glm::rotate(rotation.z, glm::vec3(0, 0, 1));
+    auto translateMat = glm::translate(mPosition);
+    auto scaleMat = glm::scale(mScale);
+    auto rotateMatX = glm::rotate(mRotation.x, glm::vec3(1, 0, 0));
+    auto rotateMatY = glm::rotate(mRotation.y, glm::vec3(0, 1, 0));
+    auto rotateMatZ = glm::rotate(mRotation.z, glm::vec3(0, 0, 1));
     auto rotationMat = rotateMatZ * rotateMatY * rotateMatX;
 
     float fov = 70;
     float near = 0.01;
     float far = 1000;
-    auto perspectiveMat = glm::perspective(fov, aspect, near, far);
+    auto perspectiveMat = glm::perspective(fov, mAspect, near, far);
 
-    transform = perspectiveMat * translateMat * rotationMat * scaleMat;
+    mMVMatrix = translateMat * rotationMat * scaleMat;
+    mMVPMatrix = perspectiveMat * mMVMatrix;
+    mNormalMatrix = glm::inverse(glm::transpose(glm::mat3(mMVMatrix)));
 }

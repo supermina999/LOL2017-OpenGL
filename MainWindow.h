@@ -11,7 +11,7 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
 
 private:
-    Widget* glWidget;
+    Widget* mGLWidget;
 };
 
 #endif // MAINWINDOW_H

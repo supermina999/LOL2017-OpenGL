@@ -27,21 +27,23 @@ protected:
     GLuint createShader(QString filename, GLenum shaderType);
     void updateTransform();
 
-    GLuint program, vertexShader, fragmentShader;
-    GLuint vertexArrayObject;
-    GLuint vertexArrayBuffer, texCoordsArrayBuffer;
-    std::vector<glm::vec3> vertexes;
-    std::vector<glm::vec2> texCoords;
+    GLuint mProgram, mVertexShader, mFragmentShader;
+    GLuint mVertexArrayObject;
+    GLuint mVertexArrayBuffer, mTexCoordsArrayBuffer, mNormalArrayBuffer;
+    std::vector<glm::vec3> mVertexes, mNormals;
+    std::vector<glm::vec2> mTexCoords;
+    glm::vec3 mLightPosition;
 
-    GLuint vertexAttrib, texCoordAttrib;
-    GLuint texture;
-    GLuint transformUniform;
+    GLuint mVertexAttrib, mTexCoordAttrib, mNormalAttrib;
+    GLuint mTexture;
+    GLuint mMVMatrixUniform, mMVPMatrixUniform, mNormalMatrixUniform, mLightPositionUniform;
 
-    glm::vec3 position, scale, rotation;
-    glm::mat4 transform;
-    float aspect;
+    glm::vec3 mPosition, mScale, mRotation;
+    glm::mat4 mMVMatrix, mMVPMatrix;
+    glm::mat3 mNormalMatrix;
+    float mAspect;
 
-    float rotationSpeed;
+    float mRotationSpeed;
 };
 
 #endif // WIDGET_H
