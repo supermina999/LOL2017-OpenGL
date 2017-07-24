@@ -87,6 +87,7 @@ Widget::~Widget()
     glDeleteBuffers(1, &mNormalArrayBuffer);
     glDeleteBuffers(1, &mTexCoordsArrayBuffer);
     glDeleteTextures(1, &mTexture);
+    glDeleteVertexArrays(1, &mVertexArrayObject);
 
     doneCurrent();
 }
@@ -96,7 +97,7 @@ void Widget::onTimer()
     mRotation.x += 0.03 * mRotationSpeed;
     mRotation.y += 0.01 * mRotationSpeed;
     mRotation.z += 0.01 * mRotationSpeed;
-    //scale.x += 0.001;
+
     update();
 }
 
@@ -126,7 +127,6 @@ void Widget::initializeGL()
     glAttachShader(mProgram, mVertexShader);
     glAttachShader(mProgram, mFragmentShader);
     glLinkProgram(mProgram);
-    glFinish();
 
     mMVMatrixUniform = glGetUniformLocation(mProgram, "mvMatrix");
     mMVPMatrixUniform = glGetUniformLocation(mProgram, "mvpMatrix");
@@ -139,20 +139,26 @@ void Widget::initializeGL()
     mTexCoordAttrib = glGetAttribLocation(mProgram, "texCoord");
     mNormalAttrib = glGetAttribLocation(mProgram, "normal");
 
-    //glGenVertexArrays(1, &vertexArrayObject);
-    //glBindVertexArray(vertexArrayObject);
+    glGenVertexArrays(1, &mVertexArrayObject);
+    glBindVertexArray(mVertexArrayObject);
 
     glGenBuffers(1, &mVertexArrayBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, mVertexArrayBuffer);
     glBufferData(GL_ARRAY_BUFFER, mVertexes.size() * sizeof(mVertexes[0]), mVertexes.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(mVertexAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(mVertexAttrib);
 
     glGenBuffers(1, &mNormalArrayBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, mNormalArrayBuffer);
     glBufferData(GL_ARRAY_BUFFER, mNormals.size() * sizeof(mNormals[0]), mNormals.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(mNormalAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(mNormalAttrib);
 
     glGenBuffers(1, &mTexCoordsArrayBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, mTexCoordsArrayBuffer);
     glBufferData(GL_ARRAY_BUFFER, mTexCoords.size() * sizeof(mTexCoords[0]), mTexCoords.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(mTexCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(mTexCoordAttrib);
 
     glGenTextures(1, &mTexture);
     glBindTexture(GL_TEXTURE_2D, mTexture);
@@ -163,8 +169,6 @@ void Widget::initializeGL()
 
     auto image = QImage(":/Resources/texture.jpg").convertToFormat(QImage::Format_RGBA8888);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
-
-    glFinish();
 }
 
 void Widget::resizeGL(int w, int h)
@@ -181,17 +185,7 @@ void Widget::paintGL()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mTexture);
 
-    glBindBuffer(GL_ARRAY_BUFFER, mVertexArrayBuffer);
-    glEnableVertexAttribArray(mVertexAttrib);
-    glVertexAttribPointer(mVertexAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, mNormalArrayBuffer);
-    glEnableVertexAttribArray(mNormalAttrib);
-    glVertexAttribPointer(mNormalAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-    glBindBuffer(GL_ARRAY_BUFFER, mTexCoordsArrayBuffer);
-    glEnableVertexAttribArray(mTexCoordAttrib);
-    glVertexAttribPointer(mTexCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glBindVertexArray(mVertexArrayObject);
 
     updateTransform();
     glUniformMatrix4fv(mMVMatrixUniform, 1, GL_FALSE, &mMVMatrix[0][0]);
@@ -213,16 +207,12 @@ GLuint Widget::createShader(QString filename, GLenum shaderType)
 
     if(context()->isOpenGLES())
     {
-        source = "#version 100\n"
-                 "precision highp float;\n"
+        source = "#version 300 es\n"
                  + source;
     }
     else
     {
-        source = "#version 110\n"
-                 "#define lowp\n"
-                 "#define highp\n"
-                 "#define mediump\n"
+        source = "#version 330 core\n"
                  + source;
     }
 
