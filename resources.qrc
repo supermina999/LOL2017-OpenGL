@@ -3,5 +3,7 @@
         <file>Resources/fragment.glsl</file>
         <file>Resources/texture.jpg</file>
         <file>Resources/vertex.glsl</file>
+        <file>Resources/shadow_fragment.glsl</file>
+        <file>Resources/shadow_vertex.glsl</file>
     </qresource>
 </RCC>

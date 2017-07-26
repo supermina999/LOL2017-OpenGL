@@ -39,13 +39,21 @@ protected:
     GLuint mVertexAttrib, mTexCoordAttrib, mNormalAttrib;
     GLuint mTexture;
     GLuint mMVMatrixUniform, mMVPMatrixUniform, mNormalMatrixUniform, mLightPositionUniform, mLightingParamsUniform;
+    GLuint mSamplerUniform, mShadowSamplerUniform, mShadowMatrixUniform;
 
     glm::vec3 mPosition, mScale, mRotation;
     glm::mat4 mMVMatrix, mMVPMatrix;
     glm::mat3 mNormalMatrix;
-    float mAspect;
+    int mWidth, mHeight;
 
     float mRotationSpeed;
+
+
+    GLuint mShadowProgram, mShadowVertexShader, mShadowFragmentShader, mShadowVertexArrayObject;
+    GLuint mLightMVPMatrixUniform, mShadowVertexAttrib;
+    GLuint mShadowFramebuffer, mShadowTexture;
+    int mShadowWidth, mShadowHeight;
+    glm::mat4 mLightMVPMatrix, mShadowMatrix;
 };
 
 #endif // WIDGET_H

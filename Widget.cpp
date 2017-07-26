@@ -5,20 +5,28 @@
 #include <QTextStream>
 #include <QFile>
 #include <QImage>
-#include <QThread>
 #include <QMessageBox>
 #include <QOpenGLContext>
 
 #include <glm/gtx/transform.hpp>
 
+#ifdef Q_OS_ANDROID
+#define GL_DEPTH_COMPONENT24 GL_DEPTH_COMPONENT24_OES
+#define GL_TEXTURE_COMPARE_MODE GL_TEXTURE_COMPARE_MODE_EXT
+#define GL_COMPARE_REF_TO_TEXTURE GL_COMPARE_REF_TO_TEXTURE_EXT
+#define GL_TEXTURE_COMPARE_FUNC GL_TEXTURE_COMPARE_FUNC_EXT
+#endif
+
 Widget::Widget(QWidget *parent)
     : QOpenGLWidget(parent)
 {
-    mAspect = 1;
     mPosition = {0, 0, -6};
     mScale = {1, 1, 1};
     mRotation = {0, 0, 0};
     mRotationSpeed = 1;
+
+    mShadowWidth = 1920;
+    mShadowHeight = 1080;
 
     mVertexes = {
         {1, 1, 1}, {-1, 1, 1}, {-1, -1, 1},
@@ -33,6 +41,8 @@ Widget::Widget(QWidget *parent)
         {1, 1, 1}, {1, -1, -1}, {1, 1, -1},
         {-1, 1, 1}, {-1, 1, -1}, {-1, -1, -1},
         {-1, 1, 1}, {-1, -1, -1}, {-1, -1, 1},
+        {2, 2, -2}, {-2, 2, -2}, {-2, -2, -2},
+        {-2, -2, -2}, {2, -2, -2}, {2, 2, -2},
     };
 
     mNormals = {
@@ -48,6 +58,8 @@ Widget::Widget(QWidget *parent)
         {1, 0, 0}, {1, 0, 0}, {1, 0, 0},
         {-1, 0, 0}, {-1, 0, 0}, {-1, 0, 0},
         {-1, 0, 0}, {-1, 0, 0}, {-1, 0, 0},
+        {0, 0, 1}, {0, 0, 1}, {0, 0, 1},
+        {0, 0, 1}, {0, 0, 1}, {0, 0, 1},
     };
 
     mTexCoords = {
@@ -63,9 +75,11 @@ Widget::Widget(QWidget *parent)
         {1, 1}, {0, 0}, {1, 0},
         {1, 1}, {1, 0}, {0, 0},
         {1, 1}, {0, 0}, {0, 1},
+        {0, 0}, {0, 0}, {0, 0},
+        {0, 0}, {0, 0}, {0, 0},
     };
 
-    mLightPosition = {0, 0, 6};
+    mLightPosition = {1, 1, 4};
     mLightingParams = {0.4, 0.6, 0.6, 1024};
 
     auto timer = new QTimer(this);
@@ -115,8 +129,6 @@ void Widget::initializeGL()
 {
     initializeOpenGLFunctions();
 
-    glViewport(-1, -1, 2, 2);
-
     glClearColor(0, 0, 1, 1);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -132,6 +144,9 @@ void Widget::initializeGL()
     mMVPMatrixUniform = glGetUniformLocation(mProgram, "mvpMatrix");
     mNormalMatrixUniform = glGetUniformLocation(mProgram, "normalMatrix");
     mLightPositionUniform = glGetUniformLocation(mProgram, "lightPosition");
+    mShadowMatrixUniform = glGetUniformLocation(mProgram, "shadowMatrix");
+    mSamplerUniform = glGetUniformLocation(mProgram, "sampler");
+    mShadowSamplerUniform = glGetUniformLocation(mProgram, "shadowSampler");
 
     mLightingParamsUniform = glGetUniformLocation(mProgram, "lightingParams");
 
@@ -169,28 +184,93 @@ void Widget::initializeGL()
 
     auto image = QImage(":/Resources/texture.jpg").convertToFormat(QImage::Format_RGBA8888);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
+
+
+
+    mShadowProgram = glCreateProgram();
+    mShadowVertexShader = createShader(":/Resources/shadow_vertex.glsl", GL_VERTEX_SHADER);
+    mShadowFragmentShader = createShader(":/Resources/shadow_fragment.glsl", GL_FRAGMENT_SHADER);
+    glAttachShader(mShadowProgram, mShadowVertexShader);
+    glAttachShader(mShadowProgram, mShadowFragmentShader);
+    glLinkProgram(mShadowProgram);
+
+    mLightMVPMatrixUniform = glGetUniformLocation(mShadowProgram, "mvpMatrix");
+    mShadowVertexAttrib = glGetAttribLocation(mShadowProgram, "vertex");
+
+    glGenVertexArrays(1, &mShadowVertexArrayObject);
+    glBindVertexArray(mShadowVertexArrayObject);
+
+    glBindBuffer(GL_ARRAY_BUFFER, mVertexArrayBuffer);
+    glVertexAttribPointer(mShadowVertexAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(mShadowVertexAttrib);
+
+    glGenFramebuffers(1, &mShadowFramebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, mShadowFramebuffer);
+
+    glGenTextures(1, &mShadowTexture);
+    glBindTexture(GL_TEXTURE_2D, mShadowTexture);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, mShadowWidth, mShadowHeight);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mShadowTexture, 0);
 }
 
 void Widget::resizeGL(int w, int h)
 {
-    mAspect = (float(w)) / h;
+    mWidth = w;
+    mHeight = h;
 }
 
 void Widget::paintGL()
 {
+    glBindFramebuffer(GL_FRAMEBUFFER, mShadowFramebuffer);
+    glViewport(0, 0, mShadowWidth, mShadowHeight);
+    glClear(GL_DEPTH_BUFFER_BIT);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+    glPolygonOffset(2, 1);
+    glCullFace(GL_FRONT);
+
+    glUseProgram(mShadowProgram);
+
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+    glBindVertexArray(mShadowVertexArrayObject);
+
+    updateTransform();
+    glUniformMatrix4fv(mLightMVPMatrixUniform, 1, GL_FALSE, &mLightMVPMatrix[0][0]);
+
+    glDrawArrays(GL_TRIANGLES, 0, mVertexes.size() - 6);
+
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    glDisable(GL_POLYGON_OFFSET_FILL);
+
+
+
+
+    glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
+    glViewport(0, 0, mWidth * devicePixelRatioF(), mHeight * devicePixelRatioF());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glCullFace(GL_BACK);
 
     glUseProgram(mProgram);
 
+    glBindVertexArray(mVertexArrayObject);
+
+    glUniform1i(mSamplerUniform, 0);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, mTexture);
 
-    glBindVertexArray(mVertexArrayObject);
+    glUniform1i(mShadowSamplerUniform, 1);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, mShadowTexture);
 
     updateTransform();
     glUniformMatrix4fv(mMVMatrixUniform, 1, GL_FALSE, &mMVMatrix[0][0]);
     glUniformMatrix4fv(mMVPMatrixUniform, 1, GL_FALSE, &mMVPMatrix[0][0]);
     glUniformMatrix3fv(mNormalMatrixUniform, 1, GL_FALSE, &mNormalMatrix[0][0]);
+    glUniformMatrix4fv(mShadowMatrixUniform, 1, GL_FALSE, &mShadowMatrix[0][0]);
 
     glUniform3fv(mLightPositionUniform, 1, &mLightPosition[0]);
     glUniform4fv(mLightingParamsUniform, 1, &mLightingParams[0]);
@@ -256,10 +336,23 @@ void Widget::updateTransform()
 
     float perspectiveFov = 70;
     float perspectiveNear = 0.01;
-    float perspectiveFar = 1000;
-    auto perspectiveMat = glm::perspective(perspectiveFov, mAspect, perspectiveNear, perspectiveFar);
+    float perspectiveFar = 15;
+    float aspect = static_cast<float>(mWidth) / mHeight;
+    auto perspectiveMat = glm::perspective(perspectiveFov, aspect, perspectiveNear, perspectiveFar);
 
     mMVMatrix = translateMat * rotationMat * scaleMat;
     mMVPMatrix = perspectiveMat * mMVMatrix;
     mNormalMatrix = glm::inverse(glm::transpose(glm::mat3(mMVMatrix)));
+
+    auto lightViewMatrix = glm::lookAt(mLightPosition, {0, 0, 0}, {0, 1, 0});
+    auto lightProjectionMatrix = glm::frustum(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 20.0f);
+
+    glm::mat4 scaleBiasMatrix = {
+        {0.5, 0, 0, 0},
+        {0, 0.5, 0, 0},
+        {0, 0, 0.5, 0},
+        {0.5, 0.5, 0.5, 1}
+    };
+    mLightMVPMatrix = lightProjectionMatrix * lightViewMatrix * rotationMat * scaleMat;
+    mShadowMatrix = scaleBiasMatrix * mLightMVPMatrix;
 }
