@@ -8,6 +8,10 @@
 
 #include <glm/glm.hpp>
 
+#include "Mesh.h"
+#include "Camera.h"
+#include "Light.h"
+
 class Widget : public QOpenGLWidget, QOpenGLExtraFunctions
 {
     Q_OBJECT
@@ -31,23 +35,17 @@ protected:
     GLuint mProgram, mVertexShader, mFragmentShader;
     GLuint mVertexArrayObject;
     GLuint mVertexArrayBuffer, mTexCoordsArrayBuffer, mNormalArrayBuffer;
-    std::vector<glm::vec3> mVertexes, mNormals;
-    std::vector<glm::vec2> mTexCoords;
-    glm::vec3 mLightPosition;
-    glm::vec4 mLightingParams;
+
+    Mesh mMesh;
+    Light mLight;
+    Camera mCamera;
 
     GLuint mVertexAttrib, mTexCoordAttrib, mNormalAttrib;
     GLuint mTexture;
     GLuint mMVMatrixUniform, mMVPMatrixUniform, mNormalMatrixUniform, mLightPositionUniform, mLightingParamsUniform;
     GLuint mSamplerUniform, mShadowSamplerUniform, mShadowMatrixUniform;
 
-    glm::vec3 mPosition, mScale, mRotation;
-    glm::mat4 mMVMatrix, mMVPMatrix;
-    glm::mat3 mNormalMatrix;
-    int mWidth, mHeight;
-
     float mRotationSpeed;
-
 
     GLuint mShadowProgram, mShadowVertexShader, mShadowFragmentShader, mShadowVertexArrayObject;
     GLuint mLightMVPMatrixUniform, mShadowVertexAttrib;

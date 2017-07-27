@@ -33,11 +33,19 @@ INCLUDEPATH += \
 SOURCES += \
         main.cpp \
         Widget.cpp \
-    MainWindow.cpp
+    MainWindow.cpp \
+    Mesh.cpp \
+    Light.cpp \
+    Camera.cpp \
+    Transform.cpp
 
 HEADERS += \
         Widget.h \
-    MainWindow.h
+    MainWindow.h \
+    Mesh.h \
+    Light.h \
+    Camera.h \
+    Transform.h
 
 RESOURCES += \
     resources.qrc
