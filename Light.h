@@ -8,19 +8,19 @@ class Light
 public:
     Light();
 
-    glm::vec3 getPosition();
+    glm::vec3 getPosition() const;
     void setPosition(glm::vec3 position);
 
     void setNear(float near);
-    float getNear();
+    float getNear() const;
 
     void setFar(float far);
-    float getFar();
+    float getFar() const;
 
     void setLightParams(float ambientCoef, float diffuseCoef, float specularCoef);
-    glm::vec3 getLightParams();
+    glm::vec3 getLightParams() const;
 
-    glm::mat4 getViewProjectionMatrix();
+    glm::mat4 getViewProjectionMatrix() const;
 
 private:
     glm::vec3 mPosition = {0, 0, 0};

@@ -6,7 +6,7 @@ Transform::Transform()
 {
 }
 
-glm::vec3 Transform::getPosition()
+glm::vec3 Transform::getPosition() const
 {
     return mPosition;
 }
@@ -16,7 +16,7 @@ void Transform::setPosition(glm::vec3 position)
     mPosition = position;
 }
 
-glm::vec3 Transform::getScale()
+glm::vec3 Transform::getScale() const
 {
     return mScale;
 }
@@ -26,7 +26,7 @@ void Transform::setScale(glm::vec3 scale)
     mScale = scale;
 }
 
-glm::vec3 Transform::getRotation()
+glm::vec3 Transform::getRotation() const
 {
     return mRotation;
 }
@@ -36,7 +36,7 @@ void Transform::setRotation(glm::vec3 rotation)
     mRotation = rotation;
 }
 
-glm::mat4 Transform::getModelMatrix()
+glm::mat4 Transform::getModelMatrix() const
 {
     auto translateMat = glm::translate(mPosition);
     auto scaleMat = glm::scale(mScale);
@@ -47,7 +47,7 @@ glm::mat4 Transform::getModelMatrix()
     return translateMat * rotationMat * scaleMat;
 }
 
-glm::mat4 Transform::getViewMatrix()
+glm::mat4 Transform::getViewMatrix() const
 {
     auto translateMat = glm::translate(-mPosition);
     auto scaleMat = glm::scale(glm::vec3(1 / mScale.x, 1 / mScale.y, 1 / mScale.z));

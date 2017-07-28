@@ -8,17 +8,17 @@ class Transform
 public:
     Transform();
 
-    glm::vec3 getPosition();
+    glm::vec3 getPosition() const;
     void setPosition(glm::vec3 position);
 
-    glm::vec3 getScale();
+    glm::vec3 getScale() const;
     void setScale(glm::vec3 scale);
 
-    glm::vec3 getRotation();
+    glm::vec3 getRotation() const;
     void setRotation(glm::vec3 rotation);
 
-    glm::mat4 getModelMatrix();
-    glm::mat4 getViewMatrix();
+    glm::mat4 getModelMatrix() const;
+    glm::mat4 getViewMatrix() const;
 
 private:
     glm::vec3 mPosition = {0, 0, 0};

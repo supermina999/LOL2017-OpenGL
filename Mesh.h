@@ -6,31 +6,38 @@
 
 #include <QString>
 
-#include <QOpenGLContext>
+#include <QOpenGLExtraFunctions>
 
 #include "Transform.h"
 #include "Camera.h"
 #include "Light.h"
 
-class Mesh : public Transform
+class Renderer;
+
+class Mesh : public Transform, private QOpenGLExtraFunctions
 {
 public:
     Mesh();
 
     void loadGeometryFromFile(QString fileName);
+    int getVertexCount() const;
 
     void loadTextureFromFile(QString fileName);
-    GLuint getTexture(GLuint texture);
+    GLuint getTexture() const;
 
     void setMaterialParams(float ambientCoef, float diffuseCoef, float specularCoef, float shininess);
-    glm::vec4 getMaterialParams();
+    glm::vec4 getMaterialParams() const;
 
-    void prepareRendering(GLuint program, GLuint shadowProgram);
+    void prepareRendering(const Renderer& renderer);
 
-    void renderShadow(GLuint shadowProgram, Light light);
-    void render(GLuint program, Camera camera, Light light);
+    GLuint getVertexArrayObject() const;
+    GLuint getShadowVertexArrayObject() const;
 
 private:
+    void initializeFunctions();
+
+    bool mIsFunctionsInitalized = false;
+
     std::vector<glm::vec3> mVertexes;
     std::vector<glm::vec3> mNormals;
     std::vector<glm::vec2> mTexCoords;

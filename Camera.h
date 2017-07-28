@@ -15,7 +15,7 @@ public:
     void setFar(float far);
     void setAspect(float aspect);
 
-    glm::mat4 getProjectionMatrix();
+    glm::mat4 getProjectionMatrix() const;
 
 private:
     float mFov = 70;
