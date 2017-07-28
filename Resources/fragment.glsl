@@ -18,7 +18,6 @@ void main()
 
     float shadowFactor = textureProj(shadowSampler, fs_shadowCoord);
 
-    //shadowFactor = 1.0;
     if(shadowFactor == 1.0)
     {
         float diffuse = max(0.0, dot(fs_normal, fs_lightDirection));
