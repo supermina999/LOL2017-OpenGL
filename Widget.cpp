@@ -20,9 +20,11 @@
 Widget::Widget(QWidget *parent)
     : QOpenGLWidget(parent)
 {
-    mMesh.loadGeometryFromFile(":/Resources/cube.mesh");
     mMesh.setMaterialParams(0.4, 0.6, 0.6, 1024);
+
     mLight.setPosition({1, 1, 4});
+
+    mCamera.setPosition({0, 0, 6});
 
     mRotationSpeed = 1;
 
@@ -36,21 +38,6 @@ Widget::Widget(QWidget *parent)
 
 Widget::~Widget()
 {
-    makeCurrent();
-
-    glDetachShader(mProgram, mVertexShader);
-    glDetachShader(mProgram, mFragmentShader);
-    glDeleteShader(mVertexShader);
-    glDeleteShader(mFragmentShader);
-    glDeleteProgram(mProgram);
-
-    glDeleteBuffers(1, &mVertexArrayBuffer);
-    glDeleteBuffers(1, &mNormalArrayBuffer);
-    glDeleteBuffers(1, &mTexCoordsArrayBuffer);
-    glDeleteTextures(1, &mTexture);
-    glDeleteVertexArrays(1, &mVertexArrayObject);
-
-    doneCurrent();
 }
 
 void Widget::onTimer()
@@ -89,69 +76,12 @@ void Widget::initializeGL()
     glAttachShader(mProgram, mFragmentShader);
     glLinkProgram(mProgram);
 
-    mMVMatrixUniform = glGetUniformLocation(mProgram, "mvMatrix");
-    mMVPMatrixUniform = glGetUniformLocation(mProgram, "mvpMatrix");
-    mNormalMatrixUniform = glGetUniformLocation(mProgram, "normalMatrix");
-    mLightPositionUniform = glGetUniformLocation(mProgram, "lightPosition");
-    mShadowMatrixUniform = glGetUniformLocation(mProgram, "shadowMatrix");
-    mSamplerUniform = glGetUniformLocation(mProgram, "sampler");
-    mShadowSamplerUniform = glGetUniformLocation(mProgram, "shadowSampler");
-
-    mLightingParamsUniform = glGetUniformLocation(mProgram, "lightingParams");
-
-    mVertexAttrib = glGetAttribLocation(mProgram, "vertex");
-    mTexCoordAttrib = glGetAttribLocation(mProgram, "texCoord");
-    mNormalAttrib = glGetAttribLocation(mProgram, "normal");
-
-    glGenVertexArrays(1, &mVertexArrayObject);
-    glBindVertexArray(mVertexArrayObject);
-
-    glGenBuffers(1, &mVertexArrayBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, mVertexArrayBuffer);
-    glBufferData(GL_ARRAY_BUFFER, mVertexes.size() * sizeof(mVertexes[0]), mVertexes.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(mVertexAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(mVertexAttrib);
-
-    glGenBuffers(1, &mNormalArrayBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, mNormalArrayBuffer);
-    glBufferData(GL_ARRAY_BUFFER, mNormals.size() * sizeof(mNormals[0]), mNormals.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(mNormalAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(mNormalAttrib);
-
-    glGenBuffers(1, &mTexCoordsArrayBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, mTexCoordsArrayBuffer);
-    glBufferData(GL_ARRAY_BUFFER, mTexCoords.size() * sizeof(mTexCoords[0]), mTexCoords.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(mTexCoordAttrib, 2, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(mTexCoordAttrib);
-
-    glGenTextures(1, &mTexture);
-    glBindTexture(GL_TEXTURE_2D, mTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    auto image = QImage(":/Resources/texture.jpg").convertToFormat(QImage::Format_RGBA8888);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
-
-
-
     mShadowProgram = glCreateProgram();
     mShadowVertexShader = createShader(":/Resources/shadow_vertex.glsl", GL_VERTEX_SHADER);
     mShadowFragmentShader = createShader(":/Resources/shadow_fragment.glsl", GL_FRAGMENT_SHADER);
     glAttachShader(mShadowProgram, mShadowVertexShader);
     glAttachShader(mShadowProgram, mShadowFragmentShader);
     glLinkProgram(mShadowProgram);
-
-    mLightMVPMatrixUniform = glGetUniformLocation(mShadowProgram, "mvpMatrix");
-    mShadowVertexAttrib = glGetAttribLocation(mShadowProgram, "vertex");
-
-    glGenVertexArrays(1, &mShadowVertexArrayObject);
-    glBindVertexArray(mShadowVertexArrayObject);
-
-    glBindBuffer(GL_ARRAY_BUFFER, mVertexArrayBuffer);
-    glVertexAttribPointer(mShadowVertexAttrib, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(mShadowVertexAttrib);
 
     glGenFramebuffers(1, &mShadowFramebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, mShadowFramebuffer);
@@ -163,13 +93,12 @@ void Widget::initializeGL()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mShadowTexture, 0);
-}
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mShadowTexture, 0);    
 
-void Widget::resizeGL(int w, int h)
-{
-    mWidth = w;
-    mHeight = h;
+
+    mMesh.loadGeometryFromFile(":/Resources/cube.mesh");
+    mMesh.loadTextureFromFile(":/Resources/texture.jpg");
+    mMesh.prepareRendering(mProgram, mShadowProgram);
 }
 
 void Widget::paintGL()
@@ -180,17 +109,11 @@ void Widget::paintGL()
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(2, 1);
     glCullFace(GL_FRONT);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
     glUseProgram(mShadowProgram);
 
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-    glBindVertexArray(mShadowVertexArrayObject);
-
-    updateTransform();
-    glUniformMatrix4fv(mLightMVPMatrixUniform, 1, GL_FALSE, &mLightMVPMatrix[0][0]);
-
-    glDrawArrays(GL_TRIANGLES, 0, mVertexes.size() - 6);
+    mMesh.renderShadow(mShadowProgram, mLight);
 
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glDisable(GL_POLYGON_OFFSET_FILL);
@@ -199,32 +122,27 @@ void Widget::paintGL()
 
 
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject());
-    glViewport(0, 0, mWidth * devicePixelRatioF(), mHeight * devicePixelRatioF());
+    glViewport(0, 0, width() * devicePixelRatioF(), height() * devicePixelRatioF());
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_BACK);
 
     glUseProgram(mProgram);
 
-    glBindVertexArray(mVertexArrayObject);
-
-    glUniform1i(mSamplerUniform, 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, mTexture);
-
-    glUniform1i(mShadowSamplerUniform, 1);
+    auto shadowSamplerUniform = glGetUniformLocation(mProgram, "shadowSampler");
+    glUniform1i(shadowSamplerUniform, 1);
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, mShadowTexture);
 
-    updateTransform();
-    glUniformMatrix4fv(mMVMatrixUniform, 1, GL_FALSE, &mMVMatrix[0][0]);
-    glUniformMatrix4fv(mMVPMatrixUniform, 1, GL_FALSE, &mMVPMatrix[0][0]);
-    glUniformMatrix3fv(mNormalMatrixUniform, 1, GL_FALSE, &mNormalMatrix[0][0]);
-    glUniformMatrix4fv(mShadowMatrixUniform, 1, GL_FALSE, &mShadowMatrix[0][0]);
+    auto lightPosition = mLight.getPosition();
+    auto lightPositionUniform = glGetUniformLocation(mProgram, "lightPosition");
+    glUniform3fv(lightPositionUniform, 1, &lightPosition[0]);
 
-    glUniform3fv(mLightPositionUniform, 1, &mLightPosition[0]);
-    glUniform4fv(mLightingParamsUniform, 1, &mLightingParams[0]);
+    mMesh.render(mProgram, mCamera, mLight);
+}
 
-    glDrawArrays(GL_TRIANGLES, 0, mVertexes.size());
+void Widget::resizeGL(int w, int h)
+{
+    mCamera.setAspect(static_cast<float>(w) / h);
 }
 
 GLuint Widget::createShader(QString filename, GLenum shaderType)
@@ -272,36 +190,4 @@ GLuint Widget::createShader(QString filename, GLenum shaderType)
     }
 
     return shader;
-}
-
-void Widget::updateTransform()
-{
-    auto translateMat = glm::translate(mPosition);
-    auto scaleMat = glm::scale(mScale);
-    auto rotateMatX = glm::rotate(mRotation.x, glm::vec3(1, 0, 0));
-    auto rotateMatY = glm::rotate(mRotation.y, glm::vec3(0, 1, 0));
-    auto rotateMatZ = glm::rotate(mRotation.z, glm::vec3(0, 0, 1));
-    auto rotationMat = rotateMatZ * rotateMatY * rotateMatX;
-
-    float perspectiveFov = 70;
-    float perspectiveNear = 0.01;
-    float perspectiveFar = 15;
-    float aspect = static_cast<float>(mWidth) / mHeight;
-    auto perspectiveMat = glm::perspective(perspectiveFov, aspect, perspectiveNear, perspectiveFar);
-
-    mMVMatrix = translateMat * rotationMat * scaleMat;
-    mMVPMatrix = perspectiveMat * mMVMatrix;
-    mNormalMatrix = glm::inverse(glm::transpose(glm::mat3(mMVMatrix)));
-
-    auto lightViewMatrix = glm::lookAt(mLightPosition, {0, 0, 0}, {0, 1, 0});
-    auto lightProjectionMatrix = glm::frustum(-1.0f, 1.0f, -1.0f, 1.0f, 1.0f, 20.0f);
-
-    glm::mat4 scaleBiasMatrix = {
-        {0.5, 0, 0, 0},
-        {0, 0.5, 0, 0},
-        {0, 0, 0.5, 0},
-        {0.5, 0.5, 0.5, 1}
-    };
-    mLightMVPMatrix = lightProjectionMatrix * lightViewMatrix * rotationMat * scaleMat;
-    mShadowMatrix = scaleBiasMatrix * mLightMVPMatrix;
 }

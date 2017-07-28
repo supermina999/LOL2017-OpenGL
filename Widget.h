@@ -26,32 +26,22 @@ public slots:
 
 protected:
     void initializeGL();
-    void resizeGL(int w, int h);
     void paintGL();
+    void resizeGL(int w, int h);
 
     GLuint createShader(QString filename, GLenum shaderType);
-    void updateTransform();
 
     GLuint mProgram, mVertexShader, mFragmentShader;
-    GLuint mVertexArrayObject;
-    GLuint mVertexArrayBuffer, mTexCoordsArrayBuffer, mNormalArrayBuffer;
 
     Mesh mMesh;
     Light mLight;
     Camera mCamera;
 
-    GLuint mVertexAttrib, mTexCoordAttrib, mNormalAttrib;
-    GLuint mTexture;
-    GLuint mMVMatrixUniform, mMVPMatrixUniform, mNormalMatrixUniform, mLightPositionUniform, mLightingParamsUniform;
-    GLuint mSamplerUniform, mShadowSamplerUniform, mShadowMatrixUniform;
-
     float mRotationSpeed;
 
-    GLuint mShadowProgram, mShadowVertexShader, mShadowFragmentShader, mShadowVertexArrayObject;
-    GLuint mLightMVPMatrixUniform, mShadowVertexAttrib;
+    GLuint mShadowProgram, mShadowVertexShader, mShadowFragmentShader;
     GLuint mShadowFramebuffer, mShadowTexture;
     int mShadowWidth, mShadowHeight;
-    glm::mat4 mLightMVPMatrix, mShadowMatrix;
 };
 
 #endif // WIDGET_H
