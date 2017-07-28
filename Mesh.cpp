@@ -5,9 +5,6 @@
 #include <QTextStream>
 #include <QOpenGLExtraFunctions>
 
-#include <iostream>
-using namespace std;
-
 Mesh::Mesh()
 {
 }
@@ -124,17 +121,6 @@ void Mesh::renderShadow(GLuint shadowProgram, Light light)
     auto lightMVPMatrix = light.getViewProjectionMatrix() * getModelMatrix();
     auto lightMVPMatrixUniform = glGetUniformLocation(shadowProgram, "mvpMatrix");
     fn.glUniformMatrix4fv(lightMVPMatrixUniform, 1, GL_FALSE, &lightMVPMatrix[0][0]);
-
-    cout << "LIGHT" << endl;
-    for(int i = 0; i < 4; i++)
-    {
-        for(int j = 0; j < 4; j++)
-        {
-            cout << light.getViewProjectionMatrix()[i][j] << " ";
-        }
-        cout << endl;
-    }
-    cout << endl << endl;
 
     fn.glBindVertexArray(mShadowVertexArrayObject);
     fn.glDrawArrays(GL_TRIANGLES, 0, mVertexes.size());
