@@ -11,6 +11,7 @@
 #include "Camera.h"
 #include "Light.h"
 #include "Renderer.h"
+#include "Texture.h"
 
 class Widget : public QOpenGLWidget
 {
@@ -28,11 +29,14 @@ protected:
     void paintGL();
     void resizeGL(int width, int height);
 
-    Renderer mRenderer;
+    std::shared_ptr<Renderer> mRenderer;
 
-    Mesh mMesh;
-    Light mLight;
-    Camera mCamera;
+    std::vector<std::shared_ptr<Mesh>> mCubeMeshes;
+    std::vector<std::shared_ptr<Mesh>> mMeshes;
+    std::shared_ptr<Mesh> mPlaneMesh;
+    std::shared_ptr<Texture> mTexture;
+    std::shared_ptr<Light> mLight;
+    std::shared_ptr<Camera> mCamera;
 
     float mRotationSpeed;
 };

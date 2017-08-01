@@ -3,40 +3,38 @@
 
 #include <glm/glm.hpp>
 #include <vector>
+#include <memory>
 
 #include <QString>
-
 #include <QOpenGLExtraFunctions>
 
 #include "Transform.h"
 #include "Camera.h"
 #include "Light.h"
+#include "Texture.h"
 
 class Renderer;
 
 class Mesh : public Transform, private QOpenGLExtraFunctions
 {
 public:
-    Mesh();
+    Mesh(QString filename, std::shared_ptr<Renderer> renderer);
+    ~Mesh();
 
-    void loadGeometryFromFile(QString fileName);
     int getVertexCount() const;
 
-    void loadTextureFromFile(QString fileName);
-    GLuint getTexture() const;
+    void setTexture(std::shared_ptr<Texture> texture);
+    std::shared_ptr<Texture> getTexture();
 
     void setMaterialParams(float ambientCoef, float diffuseCoef, float specularCoef, float shininess);
     glm::vec4 getMaterialParams() const;
-
-    void prepareRendering(const Renderer& renderer);
 
     GLuint getVertexArrayObject() const;
     GLuint getShadowVertexArrayObject() const;
 
 private:
-    void initializeFunctions();
-
-    bool mIsFunctionsInitalized = false;
+    void loadGeometryFromFile(QString filename);
+    void prepareRendering(std::shared_ptr<Renderer> renderer);
 
     std::vector<glm::vec3> mVertexes;
     std::vector<glm::vec3> mNormals;
@@ -44,7 +42,7 @@ private:
 
     glm::vec4 mMaterialParams = {1, 1, 1, 128};
 
-    GLuint mTexture = -1;
+    std::shared_ptr<Texture> mTexture;
 
     GLuint mVertexArrayObject, mShadowVertexArrayObject;
     GLuint mVertexArrayBuffer, mTexCoordsArrayBuffer, mNormalArrayBuffer;

@@ -38,7 +38,8 @@ SOURCES += \
     Light.cpp \
     Camera.cpp \
     Transform.cpp \
-    Renderer.cpp
+    Renderer.cpp \
+    Texture.cpp
 
 HEADERS += \
         Widget.h \
@@ -47,7 +48,8 @@ HEADERS += \
     Light.h \
     Camera.h \
     Transform.h \
-    Renderer.h
+    Renderer.h \
+    Texture.h
 
 RESOURCES += \
     resources.qrc

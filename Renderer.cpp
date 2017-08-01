@@ -16,15 +16,14 @@
 #define GL_TEXTURE_COMPARE_FUNC GL_TEXTURE_COMPARE_FUNC_EXT
 #endif
 
-Renderer::Renderer()
+Renderer::Renderer(glm::vec3 clearColor, int shadowWidth, int shadowHeight)
 {
-}
+    mShadowWidth = shadowWidth;
+    mShadowHeight = shadowHeight;
 
-void Renderer::initialize()
-{
     initializeOpenGLFunctions();
 
-    glClearColor(0, 0, 1, 1);
+    glClearColor(clearColor.x, clearColor.y, clearColor.z, 1);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
@@ -47,12 +46,24 @@ void Renderer::initialize()
 
     glGenTextures(1, &mShadowTexture);
     glBindTexture(GL_TEXTURE_2D, mShadowTexture);
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, mShadowWidth, mShadowHeight);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT24, shadowWidth, shadowHeight);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LEQUAL);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mShadowTexture, 0);
+}
+
+Renderer::~Renderer()
+{
+    glDeleteProgram(mProgram);
+    glDeleteShader(mVertexShader);
+    glDeleteShader(mFragmentShader);
+    glDeleteProgram(mShadowProgram);
+    glDeleteShader(mShadowVertexShader);
+    glDeleteShader(mShadowFragmentShader);
+    glDeleteFramebuffers(1, &mShadowFramebuffer);
+    glDeleteTextures(1, &mShadowTexture);
 }
 
 void Renderer::setShadowSize(int width, int height)
@@ -67,7 +78,7 @@ void Renderer::setScreenSize(int width, int height)
     mHeight = height;
 }
 
-void Renderer::renderShadows(const std::vector<Mesh> &meshes, const Light &light)
+void Renderer::renderShadows(const std::vector<std::shared_ptr<Mesh>>& meshes, std::shared_ptr<Light> light)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, mShadowFramebuffer);
     glViewport(0, 0, mShadowWidth, mShadowHeight);
@@ -81,19 +92,19 @@ void Renderer::renderShadows(const std::vector<Mesh> &meshes, const Light &light
 
     for(auto& mesh : meshes)
     {
-        auto lightMVPMatrix = light.getViewProjectionMatrix() * mesh.getModelMatrix();
+        auto lightMVPMatrix = light->getViewProjectionMatrix() * mesh->getModelMatrix();
         auto lightMVPMatrixUniform = glGetUniformLocation(mShadowProgram, "mvpMatrix");
         glUniformMatrix4fv(lightMVPMatrixUniform, 1, GL_FALSE, &lightMVPMatrix[0][0]);
 
-        glBindVertexArray(mesh.getShadowVertexArrayObject());
-        glDrawArrays(GL_TRIANGLES, 0, mesh.getVertexCount());
+        glBindVertexArray(mesh->getShadowVertexArrayObject());
+        glDrawArrays(GL_TRIANGLES, 0, mesh->getVertexCount());
     }
 
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
-void Renderer::render(const std::vector<Mesh> &meshes, const Camera &camera, const Light &light, GLuint defaultFramebufferObject)
+void Renderer::render(const std::vector<std::shared_ptr<Mesh>> &meshes, std::shared_ptr<Camera> camera, std::shared_ptr<Light> light, GLuint defaultFramebufferObject)
 {
     glBindFramebuffer(GL_FRAMEBUFFER, defaultFramebufferObject);
     glViewport(0, 0, mWidth, mHeight);
@@ -107,7 +118,7 @@ void Renderer::render(const std::vector<Mesh> &meshes, const Camera &camera, con
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, mShadowTexture);
 
-    auto lightPosition = light.getPosition();
+    auto lightPosition = light->getPosition();
     auto lightPositionUniform = glGetUniformLocation(mProgram, "lightPosition");
     glUniform3fv(lightPositionUniform, 1, &lightPosition[0]);
 
@@ -116,13 +127,13 @@ void Renderer::render(const std::vector<Mesh> &meshes, const Camera &camera, con
         auto samplerUniform = glGetUniformLocation(mProgram, "sampler");
         glUniform1i(samplerUniform, 0);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, mesh.getTexture());
+        glBindTexture(GL_TEXTURE_2D, mesh->getTexture()->getTextureId());
 
-        auto mvMatrix = camera.getViewMatrix() * mesh.getModelMatrix();
+        auto mvMatrix = camera->getViewMatrix() * mesh->getModelMatrix();
         auto mvMatrixUniform = glGetUniformLocation(mProgram, "mvMatrix");
         glUniformMatrix4fv(mvMatrixUniform, 1, GL_FALSE, &mvMatrix[0][0]);
 
-        auto mvpMatrix = camera.getProjectionMatrix() * mvMatrix;
+        auto mvpMatrix = camera->getProjectionMatrix() * mvMatrix;
         auto mvpMatrixUniform = glGetUniformLocation(mProgram, "mvpMatrix");
         glUniformMatrix4fv(mvpMatrixUniform, 1, GL_FALSE, &mvpMatrix[0][0]);
 
@@ -136,20 +147,20 @@ void Renderer::render(const std::vector<Mesh> &meshes, const Camera &camera, con
             {0, 0, 0.5, 0},
             {0.5, 0.5, 0.5, 1}
         };
-        auto lightMVPMatrix = light.getViewProjectionMatrix() * mesh.getModelMatrix();
+        auto lightMVPMatrix = light->getViewProjectionMatrix() * mesh->getModelMatrix();
         auto shadowMatrix = scaleBiasMatrix * lightMVPMatrix;
         auto shadowMatrixUniform = glGetUniformLocation(mProgram, "shadowMatrix");
         glUniformMatrix4fv(shadowMatrixUniform, 1, GL_FALSE, &shadowMatrix[0][0]);
 
         auto lightingParamsUniform = glGetUniformLocation(mProgram, "lightingParams");
-        auto lightCoefs = light.getLightParams();
-        auto matParams = mesh.getMaterialParams();
+        auto lightCoefs = light->getLightParams();
+        auto matParams = mesh->getMaterialParams();
         glm::vec4 lightingParams = {matParams.x * lightCoefs.x, matParams.y * lightCoefs.y,
                                     matParams.z * lightCoefs.z, matParams.w};
         glUniform4fv(lightingParamsUniform, 1, &lightingParams[0]);
 
-        glBindVertexArray(mesh.getVertexArrayObject());
-        glDrawArrays(GL_TRIANGLES, 0, mesh.getVertexCount());
+        glBindVertexArray(mesh->getVertexArrayObject());
+        glDrawArrays(GL_TRIANGLES, 0, mesh->getVertexCount());
     }
 }
 

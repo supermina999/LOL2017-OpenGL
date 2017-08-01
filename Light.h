@@ -25,8 +25,8 @@ public:
 private:
     glm::vec3 mPosition = {0, 0, 0};
     glm::vec3 mLightParams = {1, 1, 1};
-    float mNear = 1;
-    float mFar = 15;
+    float mNear = 0.7;
+    float mFar = 8;
 };
 
 #endif // LIGHT_H

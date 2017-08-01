@@ -6,7 +6,7 @@
 
 MainWindow::MainWindow(QWidget *parent) : QWidget(parent)
 {
-    resize(600, 600);
+    resize(800, 480);
     setWindowTitle("LOL2017-OpenGL");
     auto layout = new QVBoxLayout();
     layout->setContentsMargins(0, 0, 0, 0);

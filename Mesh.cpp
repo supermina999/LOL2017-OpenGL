@@ -7,8 +7,20 @@
 
 #include "Renderer.h"
 
-Mesh::Mesh()
+Mesh::Mesh(QString filename, std::shared_ptr<Renderer> renderer)
 {
+    initializeOpenGLFunctions();
+    loadGeometryFromFile(filename);
+    prepareRendering(renderer);
+}
+
+Mesh::~Mesh()
+{
+    glDeleteVertexArrays(1, &mVertexArrayObject);
+    glDeleteVertexArrays(1, &mShadowVertexArrayObject);
+    glDeleteBuffers(1, &mVertexArrayBuffer);
+    glDeleteBuffers(1, &mTexCoordsArrayBuffer);
+    glDeleteBuffers(1, &mNormalArrayBuffer);
 }
 
 void Mesh::loadGeometryFromFile(QString filename)
@@ -52,6 +64,16 @@ int Mesh::getVertexCount() const
     return mVertexes.size();
 }
 
+void Mesh::setTexture(std::shared_ptr<Texture> texture)
+{
+    mTexture = texture;
+}
+
+std::shared_ptr<Texture> Mesh::getTexture()
+{
+    return mTexture;
+}
+
 void Mesh::setMaterialParams(float ambientCoef, float diffuseCoef, float specularCoef, float shininess)
 {
     mMaterialParams = {ambientCoef, diffuseCoef, specularCoef, shininess};
@@ -62,15 +84,13 @@ glm::vec4 Mesh::getMaterialParams() const
     return mMaterialParams;
 }
 
-void Mesh::prepareRendering(const Renderer &renderer)
+void Mesh::prepareRendering(std::shared_ptr<Renderer> renderer)
 {
-    initializeFunctions();
-
     glGenVertexArrays(1, &mVertexArrayObject);
     glBindVertexArray(mVertexArrayObject);
 
-    auto program = renderer.getProgram();
-    auto shadowProgram = renderer.getShadowProgram();
+    auto program = renderer->getProgram();
+    auto shadowProgram = renderer->getShadowProgram();
 
     auto vertexAttrib = glGetAttribLocation(program, "vertex");
     glGenBuffers(1, &mVertexArrayBuffer);
@@ -101,26 +121,6 @@ void Mesh::prepareRendering(const Renderer &renderer)
     glEnableVertexAttribArray(shadowVertexAttrib);
 }
 
-void Mesh::loadTextureFromFile(QString fileName)
-{
-    initializeFunctions();
-
-    glGenTextures(1, &mTexture);
-    glBindTexture(GL_TEXTURE_2D, mTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    auto image = QImage(fileName).convertToFormat(QImage::Format_RGBA8888);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, image.width(), image.height(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image.bits());
-}
-
-GLuint Mesh::getTexture() const
-{
-    return mTexture;
-}
-
 GLuint Mesh::getVertexArrayObject() const
 {
     return mVertexArrayObject;
@@ -129,13 +129,4 @@ GLuint Mesh::getVertexArrayObject() const
 GLuint Mesh::getShadowVertexArrayObject() const
 {
     return mShadowVertexArrayObject;
-}
-
-void Mesh::initializeFunctions()
-{
-    if(!mIsFunctionsInitalized)
-    {
-        initializeOpenGLFunctions();
-        mIsFunctionsInitalized = true;
-    }
 }

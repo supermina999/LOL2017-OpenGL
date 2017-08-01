@@ -1,10 +1,11 @@
 <RCC>
     <qresource prefix="/">
         <file>Resources/fragment.glsl</file>
-        <file>Resources/texture.jpg</file>
         <file>Resources/vertex.glsl</file>
         <file>Resources/shadow_fragment.glsl</file>
         <file>Resources/shadow_vertex.glsl</file>
         <file>Resources/cube.mesh</file>
+        <file>Resources/plane.mesh</file>
+        <file>Resources/texture.png</file>
     </qresource>
 </RCC>
